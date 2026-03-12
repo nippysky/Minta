@@ -12,9 +12,9 @@ export default function BrandCard({ style, children, ...props }: ViewProps) {
         {
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.borderSoft,
-          shadowColor: theme.colors.shadow
+          shadowColor: theme.colors.shadow,
         },
-        style
+        style,
       ]}
     >
       {children}
@@ -25,11 +25,12 @@ export default function BrandCard({ style, children, ...props }: ViewProps) {
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 28,
-    padding: 20,
-    shadowOffset: { width: 0, height: 16 },
+    borderRadius: 30,
+    paddingHorizontal: 18,
+    paddingVertical: 22,
+    shadowOffset: { width: 0, height: 18 },
     shadowOpacity: 0.18,
     shadowRadius: 32,
-    elevation: 8
-  }
+    elevation: 8,
+  },
 });

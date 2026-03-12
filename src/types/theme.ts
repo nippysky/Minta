@@ -17,14 +17,22 @@ export type AppTheme = {
     primary: string;
     primaryText: string;
     tint: string;
-    tintAlt: string;
+    glow: string;
     inputBackground: string;
     placeholder: string;
     icon: string;
     iconFocused: string;
     grid: string;
-    glow: string;
     success: string;
     shadow: string;
+  };
+  fonts: {
+    headingRegular: string;
+    headingSemiBold: string;
+    headingBold: string;
+    bodyRegular: string;
+    bodyMedium: string;
+    bodySemiBold: string;
+    bodyBold: string;
   };
 };

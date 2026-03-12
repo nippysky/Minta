@@ -12,17 +12,25 @@ export default function GridBackground({ cellSize = 54 }: Props) {
   const theme = useAppTheme();
 
   const verticalLines = useMemo(() => {
-    const count = Math.ceil(width / cellSize);
+    const count = Math.ceil(width / cellSize) + 1;
     return Array.from({ length: count }, (_, i) => i * cellSize);
   }, [cellSize]);
 
   const horizontalLines = useMemo(() => {
-    const count = Math.ceil(height / cellSize);
+    const count = Math.ceil(height / cellSize) + 1;
     return Array.from({ length: count }, (_, i) => i * cellSize);
   }, [cellSize]);
 
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <View
+      pointerEvents="none"
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          backgroundColor: theme.colors.background,
+        },
+      ]}
+    >
       {verticalLines.map((left) => (
         <View
           key={`v-${left}`}
@@ -30,8 +38,8 @@ export default function GridBackground({ cellSize = 54 }: Props) {
             styles.vLine,
             {
               left,
-              backgroundColor: theme.colors.grid
-            }
+              backgroundColor: theme.colors.grid,
+            },
           ]}
         />
       ))}
@@ -43,8 +51,8 @@ export default function GridBackground({ cellSize = 54 }: Props) {
             styles.hLine,
             {
               top,
-              backgroundColor: theme.colors.grid
-            }
+              backgroundColor: theme.colors.grid,
+            },
           ]}
         />
       ))}
@@ -57,12 +65,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     bottom: 0,
-    width: 1
+    width: 1,
   },
   hLine: {
     position: "absolute",
     left: 0,
     right: 0,
-    height: 1
-  }
+    height: 1,
+  },
 });

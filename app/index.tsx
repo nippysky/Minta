@@ -1,15 +1,9 @@
-import { Text, View } from "react-native";
+import { Redirect } from "expo-router";
+
+import { PATHS } from "@/src/constants/paths";
+
+const isAuthenticated = false;
 
 export default function Index() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>Edit app/index.tsx to edit this screen.</Text>
-    </View>
-  );
+  return <Redirect href={isAuthenticated ? PATHS.home : PATHS.signIn} />;
 }

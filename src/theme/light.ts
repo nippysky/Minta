@@ -1,6 +1,5 @@
-
 import { AppTheme } from "../types/theme";
-import { brand, semantic } from "./tokens";
+import { semantic } from "./tokens";
 
 export const lightTheme: AppTheme = {
   mode: "light",
@@ -15,18 +14,26 @@ export const lightTheme: AppTheme = {
     textMuted: "#868C98",
     border: "#DFE3E8",
     borderSoft: "#EBEEF2",
-    borderFocus: brand.mint,
+    borderFocus: "#31E6B7",
     primary: "#22D3A6",
     primaryText: "#07120F",
-    tint: brand.mint,
-    tintAlt: brand.blue,
+    tint: "#22D3A6",
+    glow: "rgba(49,230,183,0.12)",
     inputBackground: "#F3F4F6",
     placeholder: "#98A2B3",
     icon: "#6B7280",
-    iconFocused: brand.mintDeep,
-    grid: "rgba(17,24,39,0.05)",
-    glow: "rgba(49,230,183,0.14)",
+    iconFocused: "#1FCF9F",
+    grid: "rgba(17,24,39,0.03)",
     success: semantic.success,
-    shadow: "rgba(16,24,40,0.08)"
-  }
+    shadow: "rgba(16,24,40,0.08)",
+  },
+  fonts: {
+    headingRegular: "SoraRegular",
+    headingSemiBold: "SoraSemiBold",
+    headingBold: "SoraBold",
+    bodyRegular: "InterRegular",
+    bodyMedium: "InterMedium",
+    bodySemiBold: "InterSemiBold",
+    bodyBold: "InterBold",
+  },
 };
