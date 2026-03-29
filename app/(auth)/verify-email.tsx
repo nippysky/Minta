@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unescaped-entities */
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -12,6 +11,7 @@ import GridBackground from "@/src/components/ui/GridBackground";
 import OtpCodeInput from "@/src/components/ui/OtpCodeInput";
 import { PATHS } from "@/src/constants/paths";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
+import { useAuth } from "@/src/providers/AuthProvider";
 import { useToast } from "@/src/providers/ToastProvider";
 
 const RESEND_SECONDS = 60;
@@ -19,6 +19,7 @@ const RESEND_SECONDS = 60;
 export default function VerifyEmailScreen() {
   const theme = useAppTheme();
   const { showToast } = useToast();
+  const { signIn } = useAuth();
   const params = useLocalSearchParams<{ email?: string }>();
 
   const email = useMemo(() => String(params.email ?? ""), [params.email]);
@@ -59,6 +60,8 @@ export default function VerifyEmailScreen() {
     setError("");
 
     await new Promise((resolve) => setTimeout(resolve, 900));
+
+    await signIn("mock-auth-token");
 
     setSubmitting(false);
 
@@ -107,7 +110,7 @@ export default function VerifyEmailScreen() {
 
             <View style={styles.resendRow}>
               <AppText variant="body" color={theme.colors.textSecondary}>
-                Didn't get code?
+                Didn&apos;t get code?
               </AppText>
 
               <Pressable onPress={handleResend} disabled={timeLeft > 0}>

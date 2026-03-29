@@ -1,5 +1,6 @@
-import { useThemeMode } from "../providers/ThemeProvider";
+import { useThemeMode } from "@/src/providers/ThemeProvider";
 
 export function useAppTheme() {
-  return useThemeMode().theme;
+  const { theme } = useThemeMode();
+  return theme;
 }

@@ -6,8 +6,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 
+import { AuthProvider } from "@/src/providers/AuthProvider";
 import { ThemeProvider, useThemeMode } from "@/src/providers/ThemeProvider";
 import { ToastProvider } from "@/src/providers/ToastProvider";
+import { LanguageProvider } from "@/src/providers/LanguageProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,15 +42,19 @@ export default function RootLayout() {
   }, [loaded, error]);
 
   if (!loaded && !error) {
-    return <View style={{ flex: 1, backgroundColor: "#050816" }} />;
+    return <View style={{ flex: 1, backgroundColor: "#060708" }} />;
   }
 
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <ToastProvider>
-          <RootNavigator />
-        </ToastProvider>
+        <AuthProvider>
+          <LanguageProvider>
+            <ToastProvider>
+              <RootNavigator />
+            </ToastProvider>
+          </LanguageProvider>
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

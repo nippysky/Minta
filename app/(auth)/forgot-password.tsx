@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
-import { Controller } from "react-hook-form";
 import { router } from "expo-router";
+import { Controller } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -105,10 +105,10 @@ export default function ForgotPasswordScreen() {
       showToast({
         type: "success",
         title: "Password updated",
-        message: "Your password has been reset successfully.",
+        message: "Your password has been reset successfully. Please sign in.",
       });
 
-      router.replace(PATHS.home as any);
+      router.replace(PATHS.signIn as any);
     }
   );
 

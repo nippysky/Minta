@@ -13,10 +13,15 @@ import BrandTextInput from "@/src/components/ui/BrandTextInput";
 import GridBackground from "@/src/components/ui/GridBackground";
 import { PATHS } from "@/src/constants/paths";
 import { useSignInForm } from "@/src/features/auth/hooks/useSignInForm";
+import type { SignInFormValues } from "@/src/features/auth/schemas/authSchemas";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
+import { useAuth } from "@/src/providers/AuthProvider";
+import { useToast } from "@/src/providers/ToastProvider";
 
 export default function SignInScreen() {
   const theme = useAppTheme();
+  const { signIn } = useAuth();
+  const { showToast } = useToast();
 
   const {
     control,
@@ -24,12 +29,20 @@ export default function SignInScreen() {
     formState: { errors, isValid, isSubmitting },
   } = useSignInForm();
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = handleSubmit(async (values: SignInFormValues) => {
     console.log("Sign in payload:", values);
 
-    // TODO:
-    // integrate API/auth service here
-    // await authService.signIn(values)
+    await new Promise((resolve) => setTimeout(resolve, 900));
+
+    await signIn("mock-auth-token");
+
+    showToast({
+      type: "success",
+      title: "Welcome back",
+      message: "You have signed in successfully.",
+    });
+
+    router.replace(PATHS.home as any);
   });
 
   return (
@@ -90,11 +103,11 @@ export default function SignInScreen() {
             <Controller
               control={control}
               name="email"
-              render={({ field: { onChange, onBlur, value } }) => (
+              render={({ field }) => (
                 <BrandTextInput
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
                   label="Email address"
                   icon="mail-outline"
                   keyboardType="email-address"
@@ -109,11 +122,11 @@ export default function SignInScreen() {
             <Controller
               control={control}
               name="password"
-              render={({ field: { onChange, onBlur, value } }) => (
+              render={({ field }) => (
                 <BrandTextInput
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
                   label="Password"
                   icon="lock-closed-outline"
                   secureTextEntry
@@ -129,11 +142,11 @@ export default function SignInScreen() {
               <Controller
                 control={control}
                 name="rememberMe"
-                render={({ field: { value, onChange } }) => (
+                render={({ field }) => (
                   <BrandSwitch
                     label="Remember me"
-                    value={value}
-                    onChange={onChange}
+                    value={field.value}
+                    onChange={field.onChange}
                   />
                 )}
               />

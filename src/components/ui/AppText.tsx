@@ -29,11 +29,11 @@ export default function AppText({
   } as const;
 
   const variantStyles = {
-    body: { fontSize: 16, lineHeight: 24 },
-    caption: { fontSize: 14, lineHeight: 20 },
-    label: { fontSize: 16, lineHeight: 22 },
-    title: { fontSize: 32, lineHeight: 40 },
-    hero: { fontSize: 44, lineHeight: 52 },
+    body: { fontSize: 14, lineHeight: 22 },
+    caption: { fontSize: 12, lineHeight: 18 },
+    label: { fontSize: 14, lineHeight: 22 },
+    title: { fontSize: 28, lineHeight: 38 },
+    hero: { fontSize: 40, lineHeight: 50 },
   };
 
   return (
