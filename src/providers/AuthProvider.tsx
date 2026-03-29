@@ -1,5 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { STORAGE_KEYS } from "@/src/constants/storage";
 
@@ -20,7 +28,9 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function getSafeStorageKeys(keys: (string | null | undefined)[]) {
-  return keys.filter((key): key is string => typeof key === "string" && key.trim().length > 0);
+  return keys.filter(
+    (key): key is string => typeof key === "string" && key.trim().length > 0
+  );
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

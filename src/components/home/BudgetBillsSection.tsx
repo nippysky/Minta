@@ -103,15 +103,15 @@ export default function BudgetBillsSection({
 
   const overdueRowBg = theme.isDark
     ? "rgba(111, 10, 20, 0.28)"
-    : "rgba(180, 42, 58, 0.10)";
+    : "rgba(191, 63, 74, 0.10)";
 
   const overdueRowBorder = theme.isDark
-    ? "rgba(239, 68, 68, 0.26)"
-    : "rgba(180, 42, 58, 0.18)";
+    ? "rgba(239, 68, 68, 0.24)"
+    : "rgba(191, 63, 74, 0.16)";
 
   const overdueIconBg = theme.isDark
     ? "rgba(255,255,255,0.06)"
-    : "rgba(180, 42, 58, 0.10)";
+    : "rgba(191, 63, 74, 0.10)";
 
   return (
     <TourTarget id="budget-bills">

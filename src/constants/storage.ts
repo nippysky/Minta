@@ -6,4 +6,5 @@ export const STORAGE_KEYS = {
   restartHomeTour: "minta.restartHomeTour",
   themePreference: "minta.themePreference",
   languagePreference: "minta.languagePreference",
+  securityPreferences: "minta.security.preferences",
 } as const;

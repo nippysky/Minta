@@ -1,7 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getLocales } from "expo-localization";
 import { I18n } from "i18n-js";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { STORAGE_KEYS } from "@/src/constants/storage";
 import { translations, type SupportedLanguage } from "@/src/i18n/translations";
@@ -69,7 +76,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     [language]
   );
 
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+  return (
+    <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
+  );
 }
 
 export function useLanguage() {

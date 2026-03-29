@@ -1,20 +1,19 @@
 import { Tabs } from "expo-router";
 
-import HomeTourOverlay from "@/src/components/home/HomeTourOverlay";
 import AppTabBar from "@/src/components/navigation/AppTabBar";
 import { HomeTourProvider } from "@/src/providers/HomeTourProvider";
 import { TabBarVisualProvider } from "@/src/providers/TabBarVisualProvider";
 
 export default function TabsLayout() {
   return (
-    <TabBarVisualProvider>
-      <HomeTourProvider>
+    <HomeTourProvider>
+      <TabBarVisualProvider>
         <Tabs
+          tabBar={(props) => <AppTabBar {...props} />}
           screenOptions={{
             headerShown: false,
             animation: "fade",
           }}
-          tabBar={(props) => <AppTabBar {...props} />}
         >
           <Tabs.Screen name="home" />
           <Tabs.Screen name="accounts" />
@@ -22,9 +21,7 @@ export default function TabsLayout() {
           <Tabs.Screen name="invest" />
           <Tabs.Screen name="minta-ai" />
         </Tabs>
-
-        <HomeTourOverlay />
-      </HomeTourProvider>
-    </TabBarVisualProvider>
+      </TabBarVisualProvider>
+    </HomeTourProvider>
   );
 }

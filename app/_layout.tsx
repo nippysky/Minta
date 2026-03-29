@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 
@@ -46,16 +47,18 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <LanguageProvider>
-            <ToastProvider>
-              <RootNavigator />
-            </ToastProvider>
-          </LanguageProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <ToastProvider>
+                <RootNavigator />
+              </ToastProvider>
+            </LanguageProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

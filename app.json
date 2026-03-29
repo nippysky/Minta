@@ -38,7 +38,14 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-notifications",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Minta to use Face ID for secure biometric sign in."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

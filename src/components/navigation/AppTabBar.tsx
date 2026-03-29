@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -7,40 +7,34 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppText from "@/src/components/ui/AppText";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
-import { useLanguage } from "@/src/providers/LanguageProvider";
 import { useTabBarVisual } from "@/src/providers/TabBarVisualProvider";
+
+const TAB_META: Record<
+  string,
+  { label: string; icon: keyof typeof Ionicons.glyphMap }
+> = {
+  home: { label: "Home", icon: "home-outline" },
+  accounts: { label: "Accounts", icon: "wallet-outline" },
+  goals: { label: "Goals", icon: "radio-button-on-outline" },
+  invest: { label: "Invest", icon: "trending-up-outline" },
+  "minta-ai": { label: "MiNTA AI", icon: "sparkles-outline" },
+};
 
 export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { scrollY } = useTabBarVisual();
-  const { t } = useLanguage();
-
-  const TAB_META: Record<
-    string,
-    { label: string; icon: keyof typeof Ionicons.glyphMap }
-  > = {
-    home: { label: t("nav.home"), icon: "home-outline" },
-    accounts: { label: t("nav.accounts"), icon: "wallet-outline" },
-    goals: { label: t("nav.goals"), icon: "radio-button-on-outline" },
-    invest: { label: t("nav.invest"), icon: "trending-up-outline" },
-    "minta-ai": { label: t("nav.ai"), icon: "sparkles-outline" },
-  };
 
   const clamped = Math.max(0, Math.min(scrollY, 140));
-  const backgroundOpacity = theme.isDark
-    ? 0.72 + (clamped / 140) * 0.18
-    : 0.86 + (clamped / 140) * 0.10;
-
+  const darkOpacity = 0.72 + (clamped / 140) * 0.18;
+  const lightOpacity = 0.84 + (clamped / 140) * 0.1;
   const blurIntensity = 22 + Math.round((clamped / 140) * 18);
 
-  const barBackground = theme.isDark
-    ? `rgba(9, 11, 16, ${backgroundOpacity})`
-    : `rgba(255, 255, 255, ${backgroundOpacity})`;
+  const backgroundColor = theme.isDark
+    ? `rgba(9,11,16,${darkOpacity})`
+    : `rgba(255,255,255,${lightOpacity})`;
 
-  const activeGradientColors: [string, string, string] = theme.isDark
-    ? ["rgba(77,230,190,0.20)", "rgba(77,230,190,0.10)", "rgba(120,110,255,0.08)"]
-    : ["rgba(77,230,190,0.18)", "rgba(77,230,190,0.10)", "rgba(71,199,255,0.08)"];
+  const visibleRoutes = state.routes.filter((route) => TAB_META[route.name]);
 
   return (
     <View
@@ -56,8 +50,8 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
         style={[
           styles.barWrap,
           {
+            backgroundColor,
             borderTopColor: theme.colors.borderSoft,
-            backgroundColor: barBackground,
           },
         ]}
       >
@@ -68,24 +62,39 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
         />
 
         <View style={styles.barContent}>
-          {state.routes.map((route, index) => {
-            const isFocused = state.index === index;
+          {visibleRoutes.map((route) => {
+            const originalIndex = state.routes.findIndex((r) => r.key === route.key);
+            const isFocused = state.index === originalIndex;
             const meta = TAB_META[route.name];
+
+            if (!meta) return null;
 
             return (
               <Pressable
                 key={route.key}
+                style={styles.item}
                 onPress={() => {
                   if (!isFocused) {
                     navigation.navigate(route.name);
                   }
                 }}
-                style={styles.item}
               >
                 <View style={styles.inner}>
                   {isFocused ? (
                     <LinearGradient
-                      colors={activeGradientColors}
+                      colors={
+                        theme.isDark
+                          ? [
+                              "rgba(87,242,200,0.18)",
+                              "rgba(87,242,200,0.08)",
+                              "rgba(71,199,255,0.06)",
+                            ]
+                          : [
+                              "rgba(49,230,183,0.16)",
+                              "rgba(49,230,183,0.08)",
+                              "rgba(71,199,255,0.05)",
+                            ]
+                      }
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.activeTile}
@@ -94,7 +103,7 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
 
                   <Ionicons
                     name={meta.icon}
-                    size={22}
+                    size={21}
                     color={isFocused ? theme.colors.tint : theme.colors.textMuted}
                   />
 
@@ -102,25 +111,21 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
                     variant="caption"
                     weight={isFocused ? "semibold" : "medium"}
                     color={isFocused ? theme.colors.tint : theme.colors.textMuted}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
                     style={styles.label}
+                    numberOfLines={1}
                   >
                     {meta.label}
                   </AppText>
 
-                  {isFocused ? (
-                    <View
-                      style={[
-                        styles.dot,
-                        {
-                          backgroundColor: theme.colors.tint,
-                        },
-                      ]}
-                    />
-                  ) : (
-                    <View style={styles.dotPlaceholder} />
-                  )}
+                  <View
+                    style={[
+                      styles.dot,
+                      {
+                        opacity: isFocused ? 1 : 0,
+                        backgroundColor: theme.colors.tint,
+                      },
+                    ]}
+                  />
                 </View>
               </Pressable>
             );
@@ -141,25 +146,25 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   barWrap: {
-    minHeight: 84,
+    minHeight: 82,
     borderTopWidth: 1,
     overflow: "hidden",
   },
   barContent: {
-    minHeight: 84,
+    minHeight: 82,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 6,
   },
   item: {
     flex: 1,
   },
   inner: {
-    minHeight: 60,
+    minHeight: 58,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
+    gap: 2,
     borderRadius: 14,
     paddingVertical: 4,
     overflow: "hidden",
@@ -170,16 +175,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
+    lineHeight: 14,
   },
   dot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
-    marginTop: 2,
-  },
-  dotPlaceholder: {
-    width: 6,
-    height: 6,
+    borderRadius: 999,
     marginTop: 2,
   },
 });
