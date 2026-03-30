@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { Stack } from "expo-router";
 
 export default function AppLayout() {
@@ -5,20 +6,110 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: "fade",
+        animation: Platform.OS === "ios" ? "fade" : "none",
         contentStyle: { backgroundColor: "transparent" },
       }}
     >
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="settings" />
-      <Stack.Screen name="notifications" />
-      <Stack.Screen name="profile" />
-      <Stack.Screen name="security-center" />
-      <Stack.Screen name="change-pin" />
-      <Stack.Screen name="cards" />
-      <Stack.Screen name="automation" />
-      <Stack.Screen name="budgets" />
-      <Stack.Screen name="bills" />
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          animation: "none",
+        }}
+      />
+
+      <Stack.Screen
+        name="settings"
+        options={{
+          presentation: "fullScreenModal",
+          animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="notifications"
+        options={{
+          animation: "slide_from_right",
+        }}
+      />
+      <Stack.Screen
+        name="profile"
+        options={{
+          animation: "ios_from_left",
+        }}
+      />
+      <Stack.Screen
+        name="security-center"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="change-pin"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="cards"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="automation"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="budgets"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="bills"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="privacy-policy"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="terms-of-service"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="fee-transparency"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+
+      <Stack.Screen
+        name="accounts/[accountId]/index"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+   <Stack.Screen
+  name="accounts/[accountId]/transactions/index"
+  options={{
+    animation: Platform.OS === "ios" ? "fade" : "none",
+  }}
+/>
+
+<Stack.Screen
+  name="accounts/[accountId]/transactions/[transactionId]"
+  options={{
+    animation: Platform.OS === "ios" ? "fade" : "none",
+  }}
+/>
     </Stack>
   );
 }

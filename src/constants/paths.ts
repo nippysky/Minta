@@ -26,4 +26,17 @@ export const PATHS = {
   automation: "/(app)/automation" as Href,
   budgets: "/(app)/budgets" as Href,
   bills: "/(app)/bills" as Href,
+
+  privacyPolicy: "/(app)/privacy-policy" as Href,
+  termsOfService: "/(app)/terms-of-service" as Href,
+  feeTransparency: "/(app)/fee-transparency" as Href,
+
+  accountDetails: (accountId: string) =>
+    `/(app)/accounts/${accountId}` as Href,
+
+  accountTransactions: (accountId: string) =>
+    `/(app)/accounts/${accountId}/transactions` as Href,
+
+  accountTransactionDetails: (accountId: string, transactionId: string) =>
+    `/(app)/accounts/${accountId}/transactions/${transactionId}` as Href,
 } as const;

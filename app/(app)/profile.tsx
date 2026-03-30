@@ -5,7 +5,7 @@ import AppScreen from "@/src/components/ui/AppScreen";
 import AppText from "@/src/components/ui/AppText";
 import { mockHomeData } from "@/src/features/home/data/mockHome";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
-import PageBackButton from "@/src/components/ui/PageBackButton";
+import AppBackButton from "@/src/components/ui/AppBackButton";
 
 export default function ProfileScreen() {
   const theme = useAppTheme();
@@ -32,7 +32,7 @@ export default function ProfileScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          <PageBackButton />
+          <AppBackButton />
 
           <View style={styles.header}>
             <View style={styles.avatarWrap}>

@@ -8,15 +8,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { LayoutAnimation, Platform, UIManager, useColorScheme } from "react-native";
+import { LayoutAnimation, useColorScheme } from "react-native";
 
 import { STORAGE_KEYS } from "@/src/constants/storage";
 import { darkTheme, lightTheme } from "../theme";
 
-
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export type ThemePreference = "light" | "dark" | "system";
 

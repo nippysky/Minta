@@ -18,6 +18,7 @@ export const darkTheme: AppTheme = {
     primary: "#34E7B8",
     primaryText: "#06110D",
     tint: "#57F2C8",
+    tintSoft: "rgba(87,242,200,0.16)",
     glow: "rgba(87,242,200,0.16)",
     inputBackground: "#16181D",
     placeholder: "#707887",

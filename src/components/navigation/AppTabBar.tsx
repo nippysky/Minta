@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppText from "@/src/components/ui/AppText";
@@ -26,13 +26,21 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
   const { scrollY } = useTabBarVisual();
 
   const clamped = Math.max(0, Math.min(scrollY, 140));
-  const darkOpacity = 0.72 + (clamped / 140) * 0.18;
-  const lightOpacity = 0.84 + (clamped / 140) * 0.1;
+  const darkOpacity = 0.78 + (clamped / 140) * 0.16;
+  const lightOpacity = 0.94 + (clamped / 140) * 0.04;
   const blurIntensity = 22 + Math.round((clamped / 140) * 18);
 
-  const backgroundColor = theme.isDark
+  const iosBackgroundColor = theme.isDark
     ? `rgba(9,11,16,${darkOpacity})`
     : `rgba(255,255,255,${lightOpacity})`;
+
+  const androidBackgroundColor = theme.isDark
+    ? "#0B0D11"
+    : "#F7F8FA";
+
+  const borderColor = theme.isDark
+    ? "rgba(255,255,255,0.06)"
+    : "rgba(10,13,20,0.06)";
 
   const visibleRoutes = state.routes.filter((route) => TAB_META[route.name]);
 
@@ -50,16 +58,19 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
         style={[
           styles.barWrap,
           {
-            backgroundColor,
-            borderTopColor: theme.colors.borderSoft,
+            backgroundColor:
+              Platform.OS === "ios" ? iosBackgroundColor : androidBackgroundColor,
+            borderTopColor: borderColor,
           },
         ]}
       >
-        <BlurView
-          intensity={blurIntensity}
-          tint={theme.isDark ? "dark" : "light"}
-          style={StyleSheet.absoluteFill}
-        />
+        {Platform.OS === "ios" ? (
+          <BlurView
+            intensity={blurIntensity}
+            tint={theme.isDark ? "dark" : "light"}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
 
         <View style={styles.barContent}>
           {visibleRoutes.map((route) => {
@@ -73,6 +84,12 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
               <Pressable
                 key={route.key}
                 style={styles.item}
+                android_ripple={{
+                  color: theme.isDark
+                    ? "rgba(255,255,255,0.05)"
+                    : "rgba(10,13,20,0.05)",
+                  borderless: false,
+                }}
                 onPress={() => {
                   if (!isFocused) {
                     navigation.navigate(route.name);
@@ -159,6 +176,8 @@ const styles = StyleSheet.create({
   },
   item: {
     flex: 1,
+    borderRadius: 14,
+    overflow: "hidden",
   },
   inner: {
     minHeight: 58,

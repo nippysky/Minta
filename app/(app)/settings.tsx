@@ -1,18 +1,52 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { ScrollView, StyleSheet, View, Pressable } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
 
 import AppText from "@/src/components/ui/AppText";
 import SettingsAccordionCard, {
   type SettingsAccordionItem,
 } from "@/src/components/settings/SettingsAccordionCard";
 import { PATHS } from "@/src/constants/paths";
+import { STORAGE_KEYS } from "@/src/constants/storage";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
+import { useLanguage } from "@/src/providers/LanguageProvider";
+import {
+  type ThemePreference,
+  useThemeMode,
+} from "@/src/providers/ThemeProvider";
+import { useToast } from "@/src/providers/ToastProvider";
+
+type LanguageOption = {
+  value: "en" | "pidgin" | "fr";
+  title: string;
+  subtitle: string;
+  flag: string;
+};
+
+const LANGUAGE_OPTIONS: LanguageOption[] = [
+  { value: "en", title: "English", subtitle: "English", flag: "🇬🇧" },
+  { value: "pidgin", title: "Pidgin", subtitle: "Nigerian Pidgin", flag: "🇳🇬" },
+  { value: "fr", title: "Français", subtitle: "French", flag: "🇫🇷" },
+];
+
+const THEME_OPTIONS: {
+  value: ThemePreference;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { value: "light", label: "Light", icon: "sunny-outline" },
+  { value: "dark", label: "Dark", icon: "moon-outline" },
+  { value: "system", label: "System", icon: "desktop-outline" },
+];
 
 export default function SettingsScreen() {
   const theme = useAppTheme();
+  const { themePreference, setThemePreference } = useThemeMode();
+  const { language, setLanguage } = useLanguage();
+  const { showToast } = useToast();
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
@@ -21,22 +55,281 @@ export default function SettingsScreen() {
     useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
 
-  const appearanceItems: SettingsAccordionItem[] = [
-    {
-      id: "theme",
-      label: "Theme",
-      description: "Light mode, dark mode, and system preference",
-      icon: "color-palette-outline",
-      type: "link",
-    },
-    {
-      id: "language",
-      label: "App Language",
-      description: "English, Pidgin, Français",
-      icon: "language-outline",
-      type: "link",
-    },
-  ];
+  const didMountRef = useRef(false);
+  const prevPushRef = useRef(pushEnabled);
+  const prevEmailRef = useRef(emailEnabled);
+  const prevSmsRef = useRef(smsEnabled);
+  const prevTxnRef = useRef(transactionAlertsEnabled);
+  const prevBioRef = useRef(biometricEnabled);
+
+  useEffect(() => {
+    if (!didMountRef.current) return;
+    if (prevPushRef.current !== pushEnabled) {
+      prevPushRef.current = pushEnabled;
+      showToast({
+        type: "success",
+        title: "Push notifications",
+        message: pushEnabled
+          ? "Push notifications enabled."
+          : "Push notifications disabled.",
+      });
+    }
+  }, [pushEnabled, showToast]);
+
+  useEffect(() => {
+    if (!didMountRef.current) return;
+    if (prevEmailRef.current !== emailEnabled) {
+      prevEmailRef.current = emailEnabled;
+      showToast({
+        type: "success",
+        title: "Email notifications",
+        message: emailEnabled
+          ? "Email notifications enabled."
+          : "Email notifications disabled.",
+      });
+    }
+  }, [emailEnabled, showToast]);
+
+  useEffect(() => {
+    if (!didMountRef.current) return;
+    if (prevSmsRef.current !== smsEnabled) {
+      prevSmsRef.current = smsEnabled;
+      showToast({
+        type: "success",
+        title: "SMS notifications",
+        message: smsEnabled
+          ? "SMS notifications enabled."
+          : "SMS notifications disabled.",
+      });
+    }
+  }, [smsEnabled, showToast]);
+
+  useEffect(() => {
+    if (!didMountRef.current) return;
+    if (prevTxnRef.current !== transactionAlertsEnabled) {
+      prevTxnRef.current = transactionAlertsEnabled;
+      showToast({
+        type: "success",
+        title: "Transaction alerts",
+        message: transactionAlertsEnabled
+          ? "Transaction alerts enabled."
+          : "Transaction alerts disabled.",
+      });
+    }
+  }, [transactionAlertsEnabled, showToast]);
+
+  useEffect(() => {
+    if (!didMountRef.current) return;
+    if (prevBioRef.current !== biometricEnabled) {
+      prevBioRef.current = biometricEnabled;
+      showToast({
+        type: "success",
+        title: "Biometric login",
+        message: biometricEnabled
+          ? "Biometric login enabled."
+          : "Biometric login disabled.",
+      });
+    }
+  }, [biometricEnabled, showToast]);
+
+  useEffect(() => {
+    didMountRef.current = true;
+  }, []);
+
+  const selectedLanguageMeta = useMemo(
+    () =>
+      LANGUAGE_OPTIONS.find((item) => item.value === language) ??
+      LANGUAGE_OPTIONS[0],
+    [language]
+  );
+
+  const handleThemeChange = async (value: ThemePreference) => {
+    if (value === themePreference) return;
+
+    await setThemePreference(value);
+
+    showToast({
+      type: "success",
+      title: "Theme updated",
+      message:
+        value === "system"
+          ? "App theme now follows your device preference."
+          : `${value[0].toUpperCase()}${value.slice(1)} mode selected.`,
+    });
+  };
+
+  const handleLanguageChange = async (value: "en" | "pidgin" | "fr") => {
+    if (value === language) return;
+
+    await setLanguage(value);
+
+    const option = LANGUAGE_OPTIONS.find((item) => item.value === value);
+
+    showToast({
+      type: "success",
+      title: "Language updated",
+      message: `${option?.title ?? "Language"} selected.`,
+    });
+  };
+
+  const handleRestartTour = async () => {
+    await AsyncStorage.removeItem(STORAGE_KEYS.hasSeenHomeTour);
+    await AsyncStorage.setItem(STORAGE_KEYS.restartHomeTour, "true");
+
+    showToast({
+      type: "success",
+      title: "Tour restarting",
+      message: "Taking you back home to start the guide again.",
+    });
+
+    router.replace(PATHS.home);
+  };
+
+  const appearanceContent = (
+    <View style={styles.appearancePanel}>
+      <View style={styles.panelSection}>
+        <AppText variant="title" weight="bold" style={styles.panelTitle}>
+          Theme
+        </AppText>
+
+        <View style={styles.themeRow}>
+          {THEME_OPTIONS.map((option) => {
+            const selected = themePreference === option.value;
+
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => handleThemeChange(option.value)}
+                style={({ pressed }) => [
+                  styles.themeCard,
+                  {
+                    backgroundColor: selected
+                      ? theme.colors.tintSoft
+                      : theme.colors.surfaceElevated,
+                    borderColor: selected
+                      ? theme.colors.tint
+                      : theme.colors.borderSoft,
+                    opacity: pressed ? 0.9 : 1,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={option.icon}
+                  size={26}
+                  color={selected ? theme.colors.tint : theme.colors.textMuted}
+                />
+
+                <AppText
+                  variant="body"
+                  weight={selected ? "semibold" : "medium"}
+                  color={selected ? theme.colors.tint : theme.colors.text}
+                  style={styles.themeLabel}
+                >
+                  {option.label}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View
+        style={[
+          styles.panelDivider,
+          {
+            backgroundColor: theme.colors.borderSoft,
+          },
+        ]}
+      />
+
+      <View style={styles.panelSection}>
+        <View style={styles.languageHeader}>
+          <Ionicons
+            name="globe-outline"
+            size={21}
+            color={theme.colors.textMuted}
+          />
+
+          <View style={styles.languageHeaderText}>
+            <AppText variant="title" weight="bold" style={styles.languageTitle}>
+              App Language
+            </AppText>
+
+            <AppText variant="body" color={theme.colors.textSecondary}>
+              {selectedLanguageMeta.flag} {selectedLanguageMeta.title}
+            </AppText>
+          </View>
+        </View>
+
+        <View style={styles.languageList}>
+          {LANGUAGE_OPTIONS.map((option) => {
+            const selected = option.value === language;
+
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => handleLanguageChange(option.value)}
+                style={({ pressed }) => [
+                  styles.languageCard,
+                  {
+                    backgroundColor: selected
+                      ? theme.colors.tintSoft
+                      : theme.colors.surfaceElevated,
+                    borderColor: selected
+                      ? theme.colors.tint
+                      : "transparent",
+                    opacity: pressed ? 0.92 : 1,
+                  },
+                ]}
+              >
+                <View style={styles.languageLeft}>
+                  <AppText variant="title" style={styles.flagText}>
+                    {option.flag}
+                  </AppText>
+
+                  <View style={styles.languageCopy}>
+                    <AppText
+                      variant="body"
+                      weight={selected ? "semibold" : "medium"}
+                      color={theme.colors.text}
+                      style={styles.languageCardTitle}
+                    >
+                      {option.title}
+                    </AppText>
+
+                    <AppText
+                      variant="caption"
+                      color={theme.colors.textSecondary}
+                      style={styles.languageCardSubtitle}
+                    >
+                      {option.subtitle}
+                    </AppText>
+                  </View>
+                </View>
+
+                {selected ? (
+                  <View
+                    style={[
+                      styles.checkWrap,
+                      {
+                        backgroundColor: theme.colors.tint,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name="checkmark"
+                      size={17}
+                      color={theme.colors.primaryText}
+                    />
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
 
   const notificationItems: SettingsAccordionItem[] = [
     {
@@ -147,6 +440,7 @@ export default function SettingsScreen() {
       description: "How we protect your data",
       icon: "document-text-outline",
       type: "link",
+      onPress: () => router.push(PATHS.privacyPolicy),
     },
     {
       id: "terms",
@@ -154,6 +448,7 @@ export default function SettingsScreen() {
       description: "Our terms and conditions",
       icon: "receipt-outline",
       type: "link",
+      onPress: () => router.push(PATHS.termsOfService),
     },
     {
       id: "fees",
@@ -161,6 +456,7 @@ export default function SettingsScreen() {
       description: "Transparent fee structure",
       icon: "cash-outline",
       type: "link",
+      onPress: () => router.push(PATHS.feeTransparency),
     },
   ];
 
@@ -175,13 +471,11 @@ export default function SettingsScreen() {
     {
       id: "tour",
       label: "Restart Product Tour",
-      description: "Walk through app features again",
+      description: "Go back home and start the guide again",
       icon: "play-outline",
       type: "link",
       highlight: true,
-      onPress: () => {
-        router.push(PATHS.home);
-      },
+      onPress: handleRestartTour,
     },
   ];
 
@@ -198,6 +492,7 @@ export default function SettingsScreen() {
         contentContainerStyle={[
           styles.content,
           {
+            paddingTop: 10,
             paddingBottom: 48,
           },
         ]}
@@ -266,7 +561,11 @@ export default function SettingsScreen() {
             </AppText>
 
             <View style={styles.profileMeta}>
-              <AppText variant="body" weight="semibold" color={theme.colors.tint}>
+              <AppText
+                variant="body"
+                weight="semibold"
+                color={theme.colors.tint}
+              >
                 Verified
               </AppText>
               <AppText variant="body" color={theme.colors.textMuted}>
@@ -290,7 +589,8 @@ export default function SettingsScreen() {
             title="Appearance & Language"
             subtitle="Theme, display preferences, app language"
             icon="color-palette-outline"
-            items={appearanceItems}
+            defaultExpanded
+            customContent={appearanceContent}
           />
 
           <SettingsAccordionCard
@@ -414,6 +714,96 @@ const styles = StyleSheet.create({
   },
   sections: {
     gap: 14,
+  },
+  appearancePanel: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 16,
+  },
+  panelSection: {
+    gap: 14,
+  },
+  panelTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  themeRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  themeCard: {
+    flex: 1,
+    minHeight: 132,
+    borderWidth: 1,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    gap: 12,
+  },
+  themeLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  panelDivider: {
+    height: 1,
+    marginVertical: 16,
+  },
+  languageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  languageHeaderText: {
+    flex: 1,
+    gap: 2,
+  },
+  languageTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  languageList: {
+    gap: 12,
+  },
+  languageCard: {
+    minHeight: 86,
+    borderRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  languageLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  flagText: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  languageCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  languageCardTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  languageCardSubtitle: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  checkWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
   logoutButton: {
     alignSelf: "center",

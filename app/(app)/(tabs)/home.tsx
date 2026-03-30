@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  InteractionManager,
   ScrollView,
   StyleSheet,
   View,
@@ -53,6 +54,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       let active = true;
+      let cleanupTask: { cancel?: () => void } | null = null;
 
       const checkRestartTour = async () => {
         const restart = await AsyncStorage.getItem(STORAGE_KEYS.restartHomeTour);
@@ -66,15 +68,20 @@ export default function HomeScreen() {
           animated: false,
         });
 
-        requestAnimationFrame(() => {
-          open();
+        cleanupTask = InteractionManager.runAfterInteractions(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              void open();
+            });
+          });
         });
       };
 
-      checkRestartTour();
+      void checkRestartTour();
 
       return () => {
         active = false;
+        cleanupTask?.cancel?.();
       };
     }, [open])
   );

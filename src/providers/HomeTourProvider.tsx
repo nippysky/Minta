@@ -28,10 +28,12 @@ type HomeTourContextValue = {
   next: () => Promise<void>;
   prev: () => void;
   close: () => Promise<void>;
-  open: () => void;
+  open: () => Promise<void>;
 };
 
 const DEV_FORCE_SHOW_HOME_TOUR = true;
+const DEV_ALWAYS_RESET_HOME_TOUR_ON_BOOT = true;
+const DEV_PERSIST_COMPLETION = false;
 
 const HomeTourContext = createContext<HomeTourContextValue | null>(null);
 
@@ -47,14 +49,22 @@ export function HomeTourProvider({ children }: { children: React.ReactNode }) {
 
     const bootstrap = async () => {
       try {
+        if (__DEV__ && DEV_ALWAYS_RESET_HOME_TOUR_ON_BOOT) {
+          await AsyncStorage.multiRemove([
+            STORAGE_KEYS.hasSeenHomeTour,
+            STORAGE_KEYS.restartHomeTour,
+          ]);
+        }
+
         const seen = await AsyncStorage.getItem(STORAGE_KEYS.hasSeenHomeTour);
 
         if (!mounted) return;
 
         if (__DEV__ && DEV_FORCE_SHOW_HOME_TOUR) {
-          setIsVisible(true);
           setActiveStep(0);
+          setIsVisible(true);
         } else {
+          setActiveStep(0);
           setIsVisible(seen !== "true");
         }
       } finally {
@@ -64,7 +74,7 @@ export function HomeTourProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    bootstrap();
+    void bootstrap();
 
     return () => {
       mounted = false;
@@ -98,6 +108,12 @@ export function HomeTourProvider({ children }: { children: React.ReactNode }) {
 
   const close = useCallback(async () => {
     setIsVisible(false);
+
+    if (__DEV__ && !DEV_PERSIST_COMPLETION) {
+      await AsyncStorage.removeItem(STORAGE_KEYS.hasSeenHomeTour);
+      return;
+    }
+
     await AsyncStorage.setItem(STORAGE_KEYS.hasSeenHomeTour, "true");
   }, []);
 
@@ -109,9 +125,13 @@ export function HomeTourProvider({ children }: { children: React.ReactNode }) {
     setActiveStep((prev) => Math.max(0, prev - 1));
   }, []);
 
-  const open = useCallback(() => {
-    setIsVisible(true);
+  const open = useCallback(async () => {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.hasSeenHomeTour,
+      STORAGE_KEYS.restartHomeTour,
+    ]);
     setActiveStep(0);
+    setIsVisible(true);
   }, []);
 
   const value = useMemo<HomeTourContextValue>(

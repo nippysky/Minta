@@ -11,9 +11,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppScreen from "@/src/components/ui/AppScreen";
 import AppText from "@/src/components/ui/AppText";
-import PageBackButton from "@/src/components/ui/PageBackButton";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
 import { useToast } from "@/src/providers/ToastProvider";
+import AppBackButton from "@/src/components/ui/AppBackButton";
 
 function sanitizePin(value: string) {
   return value.replace(/\D/g, "").slice(0, 4);
@@ -97,7 +97,7 @@ export default function ChangePinScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <PageBackButton />
+            <AppBackButton />
 
             <View style={styles.headerText}>
               <AppText variant="hero" weight="bold" style={styles.headerTitle}>

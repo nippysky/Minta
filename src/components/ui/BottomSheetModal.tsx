@@ -1,12 +1,10 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useMemo, useRef } from "react";
+import { Dimensions, StyleSheet } from "react-native";
 import {
-  Animated,
-  Easing,
-  Modal,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+  BottomSheetBackdrop,
+  BottomSheetModal as GorhomBottomSheetModal,
+} from "@gorhom/bottom-sheet";
+import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/src/hooks/useAppTheme";
@@ -20,6 +18,8 @@ type Props = {
   maxHeight?: BottomSheetMaxHeight;
 };
 
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+
 export default function BottomSheetModal({
   visible,
   onClose,
@@ -28,122 +28,90 @@ export default function BottomSheetModal({
 }: Props) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
+  const modalRef = useRef<GorhomBottomSheetModal>(null);
+  const controlledDismissRef = useRef(false);
 
-  const backdrop = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(560)).current;
+  const snapPoints = useMemo<(string | number)[]>(() => {
+    if (maxHeight === "auto") return ["CONTENT_HEIGHT"];
+    return [maxHeight];
+  }, [maxHeight]);
 
   useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(backdrop, {
-          toValue: 1,
-          duration: 220,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 260,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start();
+    const modal = modalRef.current;
+    if (!modal) return;
 
+    if (visible) {
+      controlledDismissRef.current = false;
+      modal.present();
       return;
     }
 
-    backdrop.setValue(0);
-    translateY.setValue(560);
-  }, [backdrop, translateY, visible]);
+    controlledDismissRef.current = true;
+    modal.dismiss();
+  }, [visible]);
 
-  const handleClose = () => {
-    Animated.parallel([
-      Animated.timing(backdrop, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 560,
-        duration: 220,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (finished) {
-        onClose();
-      }
-    });
+  const renderBackdrop = (props: BottomSheetBackdropProps) => (
+    <BottomSheetBackdrop
+      {...props}
+      appearsOnIndex={0}
+      disappearsOnIndex={-1}
+      pressBehavior="close"
+      opacity={0.72}
+    />
+  );
+
+  const handleDismiss = () => {
+    if (controlledDismissRef.current) {
+      controlledDismissRef.current = false;
+      return;
+    }
+
+    onClose();
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      presentationStyle="overFullScreen"
-      onRequestClose={handleClose}
+    <GorhomBottomSheetModal
+      ref={modalRef}
+      index={0}
+      snapPoints={snapPoints}
+      enablePanDownToClose
+      enableDismissOnClose
+      backdropComponent={renderBackdrop}
+      onDismiss={handleDismiss}
+      detached={false}
+      stackBehavior="replace"
+      keyboardBehavior="extend"
+      android_keyboardInputMode="adjustResize"
+      topInset={0}
+      bottomInset={insets.bottom}
+      maxDynamicContentSize={SCREEN_HEIGHT * 0.86}
+      handleIndicatorStyle={[
+        styles.handle,
+        { backgroundColor: theme.colors.border },
+      ]}
+      backgroundStyle={[
+        styles.background,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.borderSoft,
+        },
+      ]}
     >
-      <View style={styles.root}>
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            StyleSheet.absoluteFillObject,
-            {
-              backgroundColor: "rgba(0,0,0,0.76)",
-              opacity: backdrop,
-            },
-          ]}
-        />
-
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={handleClose} />
-
-        <Animated.View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: theme.colors.surface,
-              borderTopColor: theme.colors.borderSoft,
-              paddingBottom: Math.max(insets.bottom, 18),
-              maxHeight,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.handle,
-              {
-                backgroundColor: theme.colors.border,
-              },
-            ]}
-          />
-          {children}
-        </Animated.View>
-      </View>
-    </Modal>
+      {children}
+    </GorhomBottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  sheet: {
+  background: {
     borderTopWidth: 1,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     overflow: "hidden",
   },
   handle: {
-    width: 44,
+    width: 42,
     height: 5,
     borderRadius: 999,
-    alignSelf: "center",
-    marginTop: 10,
-    marginBottom: 10,
   },
 });

@@ -18,6 +18,7 @@ export const lightTheme: AppTheme = {
     primary: "#22D3A6",
     primaryText: "#07120F",
     tint: "#22D3A6",
+    tintSoft: "rgba(34,211,166,0.14)",
     glow: "rgba(49,230,183,0.12)",
     inputBackground: "#F3F4F6",
     placeholder: "#98A2B3",

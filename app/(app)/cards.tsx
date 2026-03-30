@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppScreen from "@/src/components/ui/AppScreen";
 import AppText from "@/src/components/ui/AppText";
-import PageBackButton from "@/src/components/ui/PageBackButton";
 import {
   mockCards,
   type CardControlItem,
@@ -24,6 +23,7 @@ import {
 } from "@/src/features/cards/data/mockCards";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
 import { useToast } from "@/src/providers/ToastProvider";
+import AppBackButton from "@/src/components/ui/AppBackButton";
 
 function formatMoney(value: number) {
   return `₦${value.toLocaleString()}`;
@@ -293,7 +293,7 @@ export default function CardsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <PageBackButton />
+            <AppBackButton />
             <View style={styles.headerText}>
               <AppText variant="hero" weight="bold" style={styles.headerTitle}>
                 Cards

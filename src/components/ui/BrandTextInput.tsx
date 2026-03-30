@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -8,7 +9,9 @@ import {
   TextInput,
   View,
   type KeyboardTypeOptions,
-  type TextInputProps,
+type NativeSyntheticEvent,
+type TargetedEvent,
+type TextInputProps,
 } from "react-native";
 
 import AppText from "@/src/components/ui/AppText";
@@ -20,6 +23,7 @@ type Props = Omit<TextInputProps, "placeholder"> & {
   secureTextEntry?: boolean;
   keyboardType?: KeyboardTypeOptions;
   error?: string;
+  useBottomSheetInput?: boolean;
 };
 
 export default function BrandTextInput({
@@ -32,6 +36,7 @@ export default function BrandTextInput({
   keyboardType = "default",
   autoCapitalize = "none",
   error,
+  useBottomSheetInput = false,
   ...rest
 }: Props) {
   const theme = useAppTheme();
@@ -69,8 +74,8 @@ export default function BrandTextInput({
       color: hasError
         ? "#EF4444"
         : active
-        ? theme.colors.iconFocused
-        : theme.colors.placeholder,
+          ? theme.colors.iconFocused
+          : theme.colors.placeholder,
     }),
     [
       active,
@@ -84,14 +89,42 @@ export default function BrandTextInput({
   const borderColor = hasError
     ? "#EF4444"
     : active
-    ? theme.colors.borderFocus
-    : theme.colors.borderSoft;
+      ? theme.colors.borderFocus
+      : theme.colors.borderSoft;
 
   const iconColor = hasError
     ? "#EF4444"
     : active
-    ? theme.colors.iconFocused
-    : theme.colors.icon;
+      ? theme.colors.iconFocused
+      : theme.colors.icon;
+
+const handleBlur = (
+  e: NativeSyntheticEvent<TargetedEvent>
+) => {
+  setIsFocused(false);
+  onBlur?.(e);
+};
+
+  const sharedInputProps: TextInputProps = {
+    value,
+    onChangeText,
+    onBlur: handleBlur,
+    keyboardType,
+    autoCapitalize,
+    autoCorrect: false,
+    secureTextEntry: isHidden,
+    selectionColor: theme.colors.tint,
+    placeholder: "",
+    onFocus: () => setIsFocused(true),
+    style: [
+      styles.input,
+      {
+        color: theme.colors.text,
+        fontFamily: theme.fonts.bodyRegular,
+      },
+    ],
+    ...rest,
+  };
 
   return (
     <View style={styles.fieldWrap}>
@@ -115,7 +148,9 @@ export default function BrandTextInput({
           style={[
             styles.label,
             {
-              fontFamily: active ? theme.fonts.bodyMedium : theme.fonts.bodyRegular,
+              fontFamily: active
+                ? theme.fonts.bodyMedium
+                : theme.fonts.bodyRegular,
             },
             labelStyle,
           ]}
@@ -123,30 +158,17 @@ export default function BrandTextInput({
           {label}
         </Animated.Text>
 
-        <TextInput
-          ref={inputRef}
-          value={value}
-          onChangeText={onChangeText}
-          onBlur={(e) => {
-            setIsFocused(false);
-            onBlur?.(e);
-          }}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-          secureTextEntry={isHidden}
-          selectionColor={theme.colors.tint}
-          placeholder=""
-          onFocus={() => setIsFocused(true)}
-          style={[
-            styles.input,
-            {
-              color: theme.colors.text,
-              fontFamily: theme.fonts.bodyRegular,
-            },
-          ]}
-          {...rest}
-        />
+        {useBottomSheetInput ? (
+          <BottomSheetTextInput
+            {...sharedInputProps}
+            ref={inputRef as never}
+          />
+        ) : (
+          <TextInput
+            {...sharedInputProps}
+            ref={inputRef}
+          />
+        )}
 
         {secureTextEntry ? (
           <Pressable onPress={() => setIsHidden((prev) => !prev)} hitSlop={10}>

@@ -72,7 +72,7 @@ export default function BrandSwitch({
           style={[
             styles.thumb,
             {
-              backgroundColor: value ? "#06110D" : "#FFFFFF",
+              backgroundColor: value ? theme.colors.background : "#FFFFFF",
               transform: [{ translateX: thumbTranslateX }, { scale: thumbScale }],
             },
           ]}

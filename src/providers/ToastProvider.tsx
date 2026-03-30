@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppText from "@/src/components/ui/AppText";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
@@ -20,6 +21,8 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+
   const translateY = useRef(new Animated.Value(-140)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,20 +56,25 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       setToast(payload);
 
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 220,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 220,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start();
+      requestAnimationFrame(() => {
+        translateY.setValue(-140);
+        opacity.setValue(0);
+
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 220,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 220,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
 
       hideTimer.current = setTimeout(() => {
         hideToast();
@@ -93,6 +101,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           style={[
             styles.toastWrap,
             {
+              top: Math.max(insets.top + 10, 20),
               opacity,
               transform: [{ translateY }],
             },
@@ -141,10 +150,10 @@ export function useToast() {
 const styles = StyleSheet.create({
   toastWrap: {
     position: "absolute",
-    top: 64,
     left: 20,
     right: 20,
-    zIndex: 999,
+    zIndex: 9999,
+    elevation: 9999,
   },
   toast: {
     borderRadius: 22,

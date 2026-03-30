@@ -17,6 +17,7 @@ export type AppTheme = {
     primary: string;
     primaryText: string;
     tint: string;
+    tintSoft: string;
     glow: string;
     inputBackground: string;
     placeholder: string;

@@ -13,12 +13,12 @@ import Svg, { Circle } from "react-native-svg";
 
 import AppScreen from "@/src/components/ui/AppScreen";
 import AppText from "@/src/components/ui/AppText";
-import PageBackButton from "@/src/components/ui/PageBackButton";
 import { enableBiometricAuthentication } from "@/src/features/security/lib/deviceSecurity";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
 import { useAuth } from "@/src/providers/AuthProvider";
 import { useSecurityPreferences } from "@/src/providers/SecurityPreferencesProvider";
 import { useToast } from "@/src/providers/ToastProvider";
+import AppBackButton from "@/src/components/ui/AppBackButton";
 
 const SIZE = 104;
 const STROKE = 8;
@@ -158,7 +158,7 @@ export default function SecurityCenterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <PageBackButton />
+            <AppBackButton />
 
             <View style={styles.headerText}>
               <AppText variant="hero" weight="bold" style={styles.headerTitle}>

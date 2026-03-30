@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 
@@ -11,6 +12,7 @@ import { AuthProvider } from "@/src/providers/AuthProvider";
 import { ThemeProvider, useThemeMode } from "@/src/providers/ThemeProvider";
 import { ToastProvider } from "@/src/providers/ToastProvider";
 import { LanguageProvider } from "@/src/providers/LanguageProvider";
+import { HomeTourProvider } from "@/src/providers/HomeTourProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,7 +22,12 @@ function RootNavigator() {
   return (
     <>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
     </>
   );
 }
@@ -50,13 +57,17 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <LanguageProvider>
-              <ToastProvider>
-                <RootNavigator />
-              </ToastProvider>
-            </LanguageProvider>
-          </AuthProvider>
+          <BottomSheetModalProvider>
+            <AuthProvider>
+              <LanguageProvider>
+                <ToastProvider>
+                  <HomeTourProvider>
+                    <RootNavigator />
+                  </HomeTourProvider>
+                </ToastProvider>
+              </LanguageProvider>
+            </AuthProvider>
+          </BottomSheetModalProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   Pressable,
@@ -14,6 +13,7 @@ import AppText from "@/src/components/ui/AppText";
 import BrandSwitch from "@/src/components/ui/BrandSwitch";
 import { useToast } from "@/src/providers/ToastProvider";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
+import AppBackButton from "@/src/components/ui/AppBackButton";
 
 type Rule = {
   id: string;
@@ -120,9 +120,7 @@ export default function AutomationScreen() {
         ]}
       >
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={22} color={theme.colors.text} />
-          </Pressable>
+         <AppBackButton/>
 
           <View style={styles.headerText}>
             <AppText variant="title" weight="bold" style={styles.title}>
@@ -356,8 +354,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 30,
   },
   subtitle: {
     fontSize: 13,

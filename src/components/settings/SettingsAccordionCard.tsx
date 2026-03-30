@@ -1,26 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Animated,
   Easing,
   LayoutAnimation,
-  Platform,
   Pressable,
   StyleSheet,
   Switch,
-  UIManager,
   View,
 } from "react-native";
 
 import AppText from "@/src/components/ui/AppText";
 import { useAppTheme } from "@/src/hooks/useAppTheme";
 
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export type SettingsAccordionItem = {
   id: string;
@@ -40,14 +32,16 @@ type Props = {
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
   defaultExpanded?: boolean;
-  items: SettingsAccordionItem[];
+  items?: SettingsAccordionItem[];
+  customContent?: ReactNode;
 };
 
 export default function SettingsAccordionCard({
   title,
   subtitle,
   icon,
-  items,
+  items = [],
+  customContent,
   defaultExpanded = false,
 }: Props) {
   const theme = useAppTheme();
@@ -85,6 +79,8 @@ export default function SettingsAccordionCard({
     [theme.colors.borderSoft, theme.colors.surface]
   );
 
+  const hasCustomContent = !!customContent;
+
   return (
     <View style={[styles.card, cardStyle]}>
       <Pressable
@@ -92,10 +88,7 @@ export default function SettingsAccordionCard({
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           setExpanded((prev) => !prev);
         }}
-        style={({ pressed }) => [
-          styles.header,
-          pressed && styles.pressed,
-        ]}
+        style={({ pressed }) => [styles.header, pressed && styles.pressed]}
       >
         <View style={styles.headerLeft}>
           <View
@@ -130,87 +123,99 @@ export default function SettingsAccordionCard({
       </Pressable>
 
       {expanded ? (
-        <View
-          style={[
-            styles.expandedBody,
-            {
-              borderTopColor: theme.colors.borderSoft,
-            },
-          ]}
-        >
-          {items.map((item, index) => {
-            const isLast = index === items.length - 1;
-            const tintColor = item.danger
-              ? "#EF4444"
-              : item.highlight
-                ? theme.colors.tint
-                : theme.colors.text;
+        hasCustomContent ? (
+          <View
+            style={[
+              styles.customContentWrap,
+              {
+                borderTopColor: theme.colors.borderSoft,
+              },
+            ]}
+          >
+            {customContent}
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.expandedBody,
+              {
+                borderTopColor: theme.colors.borderSoft,
+              },
+            ]}
+          >
+            {items.map((item, index) => {
+              const isLast = index === items.length - 1;
+              const tintColor = item.danger
+                ? "#EF4444"
+                : item.highlight
+                  ? theme.colors.tint
+                  : theme.colors.text;
 
-            return (
-              <Pressable
-                key={item.id}
-                disabled={item.type === "toggle" && !item.onPress}
-                onPress={item.type === "link" ? item.onPress : undefined}
-                style={({ pressed }) => [
-                  styles.itemRow,
-                  !isLast && [
-                    styles.itemBorder,
-                    { borderBottomColor: theme.colors.borderSoft },
-                  ],
-                  pressed && item.type === "link" && styles.pressed,
-                ]}
-              >
-                <View style={styles.itemLeft}>
-                  <Ionicons
-                    name={item.icon}
-                    size={18}
-                    color={tintColor}
-                    style={styles.itemIcon}
-                  />
-
-                  <View style={styles.itemTextWrap}>
-                    <AppText
-                      variant="body"
-                      weight={item.highlight ? "semibold" : "medium"}
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={item.type === "link" ? item.onPress : undefined}
+                  style={({ pressed }) => [
+                    styles.itemRow,
+                    !isLast && [
+                      styles.itemBorder,
+                      { borderBottomColor: theme.colors.borderSoft },
+                    ],
+                    pressed && item.type === "link" && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.itemLeft}>
+                    <Ionicons
+                      name={item.icon}
+                      size={18}
                       color={tintColor}
-                    >
-                      {item.label}
-                    </AppText>
+                      style={styles.itemIcon}
+                    />
 
-                    {item.description ? (
+                    <View style={styles.itemTextWrap}>
                       <AppText
-                        variant="caption"
-                        color={theme.colors.textSecondary}
-                        style={styles.itemDescription}
+                        variant="body"
+                        weight={item.highlight ? "semibold" : "medium"}
+                        color={tintColor}
                       >
-                        {item.description}
+                        {item.label}
                       </AppText>
-                    ) : null}
-                  </View>
-                </View>
 
-                {item.type === "toggle" ? (
-                  <Switch
-                    value={!!item.value}
-                    onValueChange={item.onToggle}
-                    trackColor={{
-                      false: theme.colors.border,
-                      true: theme.colors.tint,
-                    }}
-                    thumbColor={theme.isDark ? "#050816" : "#FFFFFF"}
-                    ios_backgroundColor={theme.colors.border}
-                  />
-                ) : (
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={theme.colors.textMuted}
-                  />
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
+                      {item.description ? (
+                        <AppText
+                          variant="caption"
+                          color={theme.colors.textSecondary}
+                          style={styles.itemDescription}
+                        >
+                          {item.description}
+                        </AppText>
+                      ) : null}
+                    </View>
+                  </View>
+
+                  {item.type === "toggle" ? (
+                    <Switch
+                      value={!!item.value}
+                      onValueChange={item.onToggle}
+                      trackColor={{
+                        false: theme.colors.border,
+                        true: theme.colors.tint,
+                      }}
+                      thumbColor={theme.isDark ? "#050816" : "#FFFFFF"}
+                      ios_backgroundColor={theme.colors.border}
+                    />
+                  ) : (
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={theme.colors.textMuted}
+                    />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        )
       ) : null}
     </View>
   );
@@ -251,6 +256,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     lineHeight: 21,
+  },
+  customContentWrap: {
+    borderTopWidth: 1,
   },
   expandedBody: {
     borderTopWidth: 1,
