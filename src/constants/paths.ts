@@ -39,4 +39,7 @@ export const PATHS = {
 
   accountTransactionDetails: (accountId: string, transactionId: string) =>
     `/(app)/accounts/${accountId}/transactions/${transactionId}` as Href,
+
+  investAssetDetails: (assetId: string) =>
+    `/(app)/invest/${assetId}` as Href,
 } as const;

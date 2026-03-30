@@ -97,19 +97,25 @@ export default function AppLayout() {
           animation: Platform.OS === "ios" ? "fade" : "none",
         }}
       />
-   <Stack.Screen
-  name="accounts/[accountId]/transactions/index"
-  options={{
-    animation: Platform.OS === "ios" ? "fade" : "none",
-  }}
-/>
+      <Stack.Screen
+        name="accounts/[accountId]/transactions/index"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
+      <Stack.Screen
+        name="accounts/[accountId]/transactions/[transactionId]"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
 
-<Stack.Screen
-  name="accounts/[accountId]/transactions/[transactionId]"
-  options={{
-    animation: Platform.OS === "ios" ? "fade" : "none",
-  }}
-/>
+      <Stack.Screen
+        name="invest/[assetId]"
+        options={{
+          animation: Platform.OS === "ios" ? "fade" : "none",
+        }}
+      />
     </Stack>
   );
 }

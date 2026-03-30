@@ -1,5 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BottomSheetScrollView, BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import {
+  BottomSheetScrollView,
+  BottomSheetTextInput,
+} from "@gorhom/bottom-sheet";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -10,6 +13,7 @@ import type { LinkedAccount } from "@/src/features/accounts/types";
 import { formatCurrency } from "@/src/features/accounts/utils";
 
 type Mode = "transfer" | "fund-general" | "fund-account";
+
 type TransferStep =
   | "source"
   | "destination"
@@ -31,6 +35,16 @@ type TransferPayload = {
   category: string;
 };
 
+type FundMethod = "bank-transfer" | "debit-card" | "ussd";
+type FundStep = "target" | "method" | "amount" | "success";
+
+export type FundPayload = {
+  target: LinkedAccount;
+  amount: number;
+  method: FundMethod;
+  reference: string;
+};
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -41,6 +55,7 @@ type Props = {
   sourceAccount?: LinkedAccount | null;
   onSelectAccount: (account: LinkedAccount) => void;
   onTransferComplete?: (payload: TransferPayload) => void;
+  onFundComplete?: (payload: FundPayload) => void;
 };
 
 const CATEGORY_OPTIONS = [
@@ -73,6 +88,7 @@ const EXTERNAL_BANKS = [
 
 const QUICK_AMOUNTS = [5000, 10000, 20000, 50000] as const;
 const TRANSFER_FEE = 25;
+const FUND_MINIMUM = 100;
 
 function formatAccountNumberInput(value: string) {
   return value.replace(/[^\d]/g, "").slice(0, 10);
@@ -101,6 +117,23 @@ function recipientNameFor(bankName: string, accountNumber: string) {
   if (bankName === "Zenith Bank") return "Mariam Bello";
   if (bankName === "First Bank") return "Tolu Adepoju";
   return "Verified Recipient";
+}
+
+function generateReference() {
+  const tail = Math.random().toString(36).toUpperCase().slice(2, 10);
+  return `TXN${Date.now()}${tail}`;
+}
+
+function fundingMethodLabel(method: FundMethod | null) {
+  if (method === "bank-transfer") return "Bank Transfer";
+  if (method === "debit-card") return "Debit Card";
+  if (method === "ussd") return "USSD";
+  return "";
+}
+
+function fundingSuccessTargetName(account: LinkedAccount | null) {
+  if (!account) return "account";
+  return account.kind === "wallet" ? "MiNTA account" : `${account.bankName} account`;
 }
 
 function PinInput({
@@ -159,11 +192,14 @@ export default function AccountPickerSheet({
   sourceAccount,
   onSelectAccount,
   onTransferComplete,
+  onFundComplete,
 }: Props) {
   const theme = useAppTheme();
 
   const [step, setStep] = useState<TransferStep>("source");
-  const [selectedSource, setSelectedSource] = useState<LinkedAccount | null>(null);
+  const [selectedSource, setSelectedSource] = useState<LinkedAccount | null>(
+    null
+  );
   const [destinationType, setDestinationType] =
     useState<DestinationType>("own");
   const [selectedDestination, setSelectedDestination] =
@@ -174,6 +210,12 @@ export default function AccountPickerSheet({
   const [amount, setAmount] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [pin, setPin] = useState("");
+
+  const [fundStep, setFundStep] = useState<FundStep>("target");
+  const [fundTarget, setFundTarget] = useState<LinkedAccount | null>(null);
+  const [fundMethod, setFundMethod] = useState<FundMethod | null>(null);
+  const [fundAmount, setFundAmount] = useState("");
+  const [fundReference, setFundReference] = useState("");
 
   useEffect(() => {
     if (!visible) return;
@@ -188,12 +230,26 @@ export default function AccountPickerSheet({
     setSelectedCategory("");
     setPin("");
 
+    setFundMethod(null);
+    setFundAmount("");
+    setFundReference("");
+
     if (mode === "transfer") {
       setStep(sourceAccount ? "destination" : "source");
-    } else {
-      setStep("source");
+      setFundTarget(null);
+      setFundStep("target");
+      return;
     }
-  }, [visible, mode, sourceAccount]);
+
+    if (mode === "fund-account" && targetAccount) {
+      setFundTarget(targetAccount);
+      setFundStep("method");
+      return;
+    }
+
+    setFundTarget(null);
+    setFundStep("target");
+  }, [visible, mode, sourceAccount, targetAccount]);
 
   const sourceCandidates = useMemo(() => {
     if (mode !== "transfer") return accounts;
@@ -213,6 +269,7 @@ export default function AccountPickerSheet({
   const numericAmount = amountNumber(amount);
   const fee = destinationType === "other-bank" ? TRANSFER_FEE : 0;
   const totalCharge = numericAmount + fee;
+
   const canContinueFromAmount =
     !!selectedSource &&
     numericAmount > 0 &&
@@ -228,37 +285,61 @@ export default function AccountPickerSheet({
       ? selectedDestination?.bankName ?? ""
       : otherBankName;
 
+  const fundNumericAmount = amountNumber(fundAmount);
+  const canContinueFundAmount = !!fundTarget && fundNumericAmount >= FUND_MINIMUM;
+
   const handleBack = () => {
-    if (mode !== "transfer") {
+    if (mode === "transfer") {
+      if (step === "source") {
+        onClose();
+        return;
+      }
+
+      if (step === "destination") {
+        if (sourceAccount) {
+          onClose();
+        } else {
+          setStep("source");
+        }
+        return;
+      }
+
+      if (step === "amount") {
+        setStep("destination");
+        return;
+      }
+
+      if (step === "category") {
+        setStep("amount");
+        return;
+      }
+
+      setStep("category");
+      return;
+    }
+
+    if (fundStep === "target") {
       onClose();
       return;
     }
 
-    if (step === "source") {
-      onClose();
-      return;
-    }
-
-    if (step === "destination") {
-      if (sourceAccount) {
+    if (fundStep === "method") {
+      if (mode === "fund-account") {
         onClose();
       } else {
-        setStep("source");
+        setFundStep("target");
       }
       return;
     }
 
-    if (step === "amount") {
-      setStep("destination");
+    if (fundStep === "amount") {
+      setFundStep("method");
       return;
     }
 
-    if (step === "category") {
-      setStep("amount");
-      return;
+    if (fundStep === "success") {
+      onClose();
     }
-
-    setStep("category");
   };
 
   const handleClose = () => {
@@ -316,6 +397,33 @@ export default function AccountPickerSheet({
     });
 
     onClose();
+  };
+
+  const handleFundTargetSelect = (account: LinkedAccount) => {
+    setFundTarget(account);
+    setFundStep("method");
+  };
+
+  const handleFundMethodSelect = (method: FundMethod) => {
+    setFundMethod(method);
+    setFundAmount("");
+    setFundStep("amount");
+  };
+
+  const handleFundSubmit = () => {
+    if (!fundTarget || !fundMethod || !canContinueFundAmount) return;
+
+    const reference = generateReference();
+    setFundReference(reference);
+
+    onFundComplete?.({
+      target: fundTarget,
+      amount: fundNumericAmount,
+      method: fundMethod,
+      reference,
+    });
+
+    setFundStep("success");
   };
 
   const renderHeader = (title: string, showBack = false) => (
@@ -817,7 +925,12 @@ export default function AccountPickerSheet({
           <AppText variant="body" color={theme.colors.textSecondary}>
             Available Balance
           </AppText>
-          <AppText variant="hero" weight="bold" color={theme.colors.tint} style={styles.balanceText}>
+          <AppText
+            variant="hero"
+            weight="bold"
+            color={theme.colors.tint}
+            style={styles.balanceText}
+          >
             {formatCurrency(selectedSource.balance)}
           </AppText>
         </View>
@@ -1028,7 +1141,12 @@ export default function AccountPickerSheet({
             You&apos;re about to transfer
           </AppText>
 
-          <AppText variant="hero" weight="bold" color={theme.colors.tint} style={styles.confirmAmount}>
+          <AppText
+            variant="hero"
+            weight="bold"
+            color={theme.colors.tint}
+            style={styles.confirmAmount}
+          >
             {formatCurrency(numericAmount)}
           </AppText>
 
@@ -1040,7 +1158,10 @@ export default function AccountPickerSheet({
 
           <View style={styles.confirmMeta}>
             <AppText variant="body" color={theme.colors.textSecondary}>
-              From: {selectedSource.bankName === "MiNTA Wallet" ? "MiNTA" : selectedSource.bankName}
+              From:{" "}
+              {selectedSource.bankName === "MiNTA Wallet"
+                ? "MiNTA"
+                : selectedSource.bankName}
             </AppText>
             <AppText variant="body" color={theme.colors.textSecondary}>
               To: {destinationLine}
@@ -1086,81 +1207,26 @@ export default function AccountPickerSheet({
     );
   };
 
-  const renderFundSelector = () => (
+  const renderFundTargetStep = () => (
     <>
-      {renderHeader(
-        mode === "fund-account" ? "Fund MiNTA Wallet" : "Select Account to Fund",
-        false
-      )}
+      {renderHeader("Select Account to Fund", false)}
       <View
         style={[styles.divider, { backgroundColor: theme.colors.borderSoft }]}
       />
-
-      {mode === "fund-account" && targetAccount ? (
-        <>
-          <View
-            style={[
-              styles.targetCard,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: "rgba(87,242,200,0.22)",
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.targetGlow,
-                { backgroundColor: targetAccount.accent },
-              ]}
-            />
-
-            <View
-              style={[
-                styles.targetIcon,
-                { backgroundColor: theme.colors.tint },
-              ]}
-            >
-              <Ionicons
-                name={targetAccount.icon as keyof typeof Ionicons.glyphMap}
-                size={18}
-                color={theme.colors.primaryText}
-              />
-            </View>
-
-            <View style={styles.targetCopy}>
-              <AppText variant="caption" color={theme.colors.textSecondary}>
-                Funding
-              </AppText>
-              <AppText variant="body" weight="bold">
-                {targetAccount.bankName} Wallet
-              </AppText>
-            </View>
-
-            <AppText
-              variant="body"
-              weight="bold"
-              color={theme.colors.textSecondary}
-            >
-              {formatCurrency(targetAccount.balance)}
-            </AppText>
-          </View>
-
-          <AppText variant="body" color={theme.colors.textSecondary}>
-            Transfer from a linked bank:
-          </AppText>
-        </>
-      ) : null}
 
       <View style={styles.list}>
         {accounts.map((account) => (
           <Pressable
             key={account.id}
-            onPress={() => onSelectAccount(account)}
+            onPress={() => handleFundTargetSelect(account)}
             style={[
               styles.row,
               {
                 backgroundColor: theme.colors.inputBackground,
-                borderColor: theme.colors.borderSoft,
+                borderColor:
+                  fundTarget?.id === account.id
+                    ? theme.colors.borderFocus
+                    : theme.colors.borderSoft,
               },
             ]}
           >
@@ -1175,7 +1241,7 @@ export default function AccountPickerSheet({
 
               <View style={styles.rowCopy}>
                 <AppText variant="body" weight="bold">
-                  {account.bankName}
+                  {account.bankName === "MiNTA Wallet" ? "MiNTA" : account.bankName}
                 </AppText>
                 <AppText variant="body" color={theme.colors.textSecondary}>
                   {account.accountNumber}
@@ -1192,6 +1258,368 @@ export default function AccountPickerSheet({
     </>
   );
 
+  const renderFundMethodStep = () => {
+    if (!fundTarget) return null;
+
+    const targetName =
+      fundTarget.kind === "wallet"
+        ? "MiNTA"
+        : fundTarget.bankName === "MiNTA Wallet"
+          ? "MiNTA"
+          : fundTarget.bankName;
+
+    const methodCards: {
+      key: FundMethod;
+      title: string;
+      subtitle: string;
+      icon: keyof typeof Ionicons.glyphMap;
+    }[] = [
+      {
+        key: "bank-transfer",
+        title: "Bank Transfer",
+        subtitle: "Transfer from another bank",
+        icon: "business-outline",
+      },
+      {
+        key: "debit-card",
+        title: "Debit Card",
+        subtitle: "Fund with your card",
+        icon: "card-outline",
+      },
+      {
+        key: "ussd",
+        title: "USSD",
+        subtitle: "Use USSD code",
+        icon: "wallet-outline",
+      },
+    ];
+
+    return (
+      <>
+        {renderHeader("Choose Funding Source", true)}
+        <View
+          style={[styles.divider, { backgroundColor: theme.colors.borderSoft }]}
+        />
+
+        <View
+          style={[
+            styles.sourceHeroCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: "rgba(87,242,200,0.22)",
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.sourceHeroGlow,
+              { backgroundColor: fundTarget.accent },
+            ]}
+          />
+          <View style={styles.rowLeft}>
+            <View style={styles.logoWrapLarge}>
+              <Ionicons
+                name={iconForAccount(fundTarget)}
+                size={24}
+                color={fundTarget.logoColor}
+              />
+            </View>
+
+            <View style={styles.rowCopy}>
+              <AppText variant="caption" color={theme.colors.textSecondary}>
+                Funding
+              </AppText>
+              <AppText variant="title" weight="semibold" style={styles.heroName}>
+                {targetName}
+              </AppText>
+            </View>
+          </View>
+        </View>
+
+        <AppText variant="body" color={theme.colors.textSecondary}>
+          Choose how to fund:
+        </AppText>
+
+        <View style={styles.methodList}>
+          {methodCards.map((item) => (
+            <Pressable
+              key={item.key}
+              onPress={() => handleFundMethodSelect(item.key)}
+              style={[
+                styles.methodCard,
+                {
+                  backgroundColor: theme.colors.inputBackground,
+                  borderColor: theme.colors.borderSoft,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.methodIconWrap,
+                  { backgroundColor: theme.colors.tintSoft },
+                ]}
+              >
+                <Ionicons
+                  name={item.icon}
+                  size={22}
+                  color={theme.colors.tint}
+                />
+              </View>
+
+              <View style={styles.methodCopy}>
+                <AppText variant="title" weight="semibold" style={styles.methodTitle}>
+                  {item.title}
+                </AppText>
+                <AppText variant="body" color={theme.colors.textSecondary}>
+                  {item.subtitle}
+                </AppText>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      </>
+    );
+  };
+
+  const renderFundAmountStep = () => {
+    if (!fundTarget || !fundMethod) return null;
+
+    const targetName =
+      fundTarget.kind === "wallet"
+        ? "MiNTA"
+        : fundTarget.bankName === "MiNTA Wallet"
+          ? "MiNTA"
+          : fundTarget.bankName;
+
+    return (
+      <>
+        {renderHeader("Enter Amount", true)}
+        <View
+          style={[styles.divider, { backgroundColor: theme.colors.borderSoft }]}
+        />
+
+        <View
+          style={[
+            styles.fundHeroCard,
+            {
+              backgroundColor: theme.colors.inputBackground,
+              borderColor: theme.colors.borderSoft,
+            },
+          ]}
+        >
+          <View style={styles.rowLeft}>
+            <View style={styles.logoWrap}>
+              <Ionicons
+                name={iconForAccount(fundTarget)}
+                size={22}
+                color={fundTarget.logoColor}
+              />
+            </View>
+
+            <View style={styles.rowCopy}>
+              <AppText variant="body" color={theme.colors.textSecondary}>
+                Funding via {fundingMethodLabel(fundMethod)}
+              </AppText>
+              <AppText variant="title" weight="semibold" style={styles.heroName}>
+                {targetName}
+              </AppText>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.fieldBlock}>
+          <AppText variant="body" color={theme.colors.textSecondary}>
+            Amount to Add
+          </AppText>
+
+          <View
+            style={[
+              styles.amountInputWrap,
+              {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.borderSoft,
+              },
+            ]}
+          >
+            <AppText variant="hero" weight="bold">
+              ₦
+            </AppText>
+            <BottomSheetTextInput
+              value={fundAmount}
+              onChangeText={(text) => setFundAmount(formatAmountInput(text))}
+              keyboardType="number-pad"
+              style={[
+                styles.amountInput,
+                {
+                  color: theme.colors.text,
+                  fontFamily: theme.fonts.headingBold,
+                },
+              ]}
+              selectionColor={theme.colors.tint}
+              placeholder="0"
+              placeholderTextColor={theme.colors.placeholder}
+              textAlign="center"
+            />
+          </View>
+
+          <AppText variant="body" color={theme.colors.textSecondary}>
+            Minimum amount: {formatCurrency(FUND_MINIMUM)}
+          </AppText>
+        </View>
+
+        <View style={styles.quickAmountRow}>
+          {QUICK_AMOUNTS.map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => setFundAmount(item.toLocaleString("en-NG"))}
+              style={[
+                styles.quickAmountChip,
+                {
+                  backgroundColor: theme.colors.inputBackground,
+                  borderColor: theme.colors.borderSoft,
+                },
+              ]}
+            >
+              <AppText variant="body" weight="semibold">
+                ₦{item >= 1000 ? `${item / 1000}k` : item}
+              </AppText>
+            </Pressable>
+          ))}
+        </View>
+
+        {fundMethod === "bank-transfer" ? (
+          <View
+            style={[
+              styles.bankTransferDetailsCard,
+              {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.borderSoft,
+              },
+            ]}
+          >
+            <AppText variant="title" weight="semibold" style={styles.bankTransferTitle}>
+              Bank Transfer Details
+            </AppText>
+            <AppText variant="body" color={theme.colors.textSecondary}>
+              Account Name: MiNTA/MiNTA Wallet
+            </AppText>
+            <AppText variant="body" color={theme.colors.textSecondary}>
+              Account Number: 9012345678
+            </AppText>
+            <AppText variant="body" color={theme.colors.textSecondary}>
+              Bank: Providus Bank
+            </AppText>
+          </View>
+        ) : null}
+
+        <View
+          style={[styles.divider, { backgroundColor: theme.colors.borderSoft }]}
+        />
+
+        <Pressable
+          onPress={handleFundSubmit}
+          disabled={!canContinueFundAmount}
+          style={[
+            styles.primaryFooterButton,
+            {
+              backgroundColor: theme.colors.tint,
+              opacity: canContinueFundAmount ? 1 : 0.55,
+            },
+          ]}
+        >
+          <AppText
+            variant="title"
+            weight="bold"
+            color={theme.colors.primaryText}
+            style={styles.primaryFooterText}
+          >
+            Fund {formatCurrency(fundNumericAmount)}
+          </AppText>
+        </Pressable>
+      </>
+    );
+  };
+
+  const renderFundSuccessStep = () => {
+    if (!fundTarget || !fundMethod) return null;
+
+    return (
+      <>
+        {renderHeader("Funding Successful", false)}
+        <View
+          style={[styles.divider, { backgroundColor: theme.colors.borderSoft }]}
+        />
+
+        <View style={styles.confirmWrap}>
+          <View style={styles.successIconWrap}>
+            <View style={styles.successGlow} />
+            <View style={styles.successIconInner}>
+              <Ionicons name="checkmark" size={36} color="#07110E" />
+            </View>
+          </View>
+
+          <AppText variant="hero" weight="bold" style={styles.successTitle}>
+            Funding Successful!
+          </AppText>
+
+          <AppText
+            variant="body"
+            color={theme.colors.textSecondary}
+            style={styles.successMessage}
+          >
+            {formatCurrency(fundNumericAmount)} has been added to your{" "}
+            {fundingSuccessTargetName(fundTarget)}
+          </AppText>
+
+          <View
+            style={[
+              styles.referenceCard,
+              {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.borderSoft,
+              },
+            ]}
+          >
+            <AppText variant="body" color={theme.colors.textSecondary}>
+              Reference
+            </AppText>
+            <AppText variant="body" weight="medium" style={styles.referenceText}>
+              {fundReference}
+            </AppText>
+          </View>
+        </View>
+
+        <View
+          style={[styles.divider, { backgroundColor: theme.colors.borderSoft }]}
+        />
+
+        <Pressable
+          onPress={onClose}
+          style={[
+            styles.primaryFooterButton,
+            { backgroundColor: theme.colors.tint },
+          ]}
+        >
+          <AppText
+            variant="title"
+            weight="bold"
+            color={theme.colors.primaryText}
+            style={styles.primaryFooterText}
+          >
+            Done
+          </AppText>
+        </Pressable>
+      </>
+    );
+  };
+
+  const renderCurrentFundFlow = () => {
+    if (fundStep === "target") return renderFundTargetStep();
+    if (fundStep === "method") return renderFundMethodStep();
+    if (fundStep === "amount") return renderFundAmountStep();
+    return renderFundSuccessStep();
+  };
+
   return (
     <BottomSheetModal visible={visible} onClose={onClose} maxHeight="90%">
       <BottomSheetScrollView
@@ -1207,7 +1635,7 @@ export default function AccountPickerSheet({
             {step === "confirm" ? renderConfirmStep() : null}
           </>
         ) : (
-          renderFundSelector()
+          renderCurrentFundFlow()
         )}
       </BottomSheetScrollView>
     </BottomSheetModal>
@@ -1247,7 +1675,7 @@ const styles = StyleSheet.create({
   row: {
     minHeight: 84,
     borderRadius: 22,
-    borderWidth: 1,
+    borderWidth: 1.5,
     paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
@@ -1295,7 +1723,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.02)",
   },
   heroName: {
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 24,
   },
 
@@ -1357,7 +1785,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 1.5,
     paddingHorizontal: 18,
-    fontSize: 18,
+    fontSize: 14,
     lineHeight: 24,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.24,
@@ -1429,7 +1857,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   recipientName: {
-    fontSize: 19,
+    fontSize: 14,
     lineHeight: 24,
     textAlign: "center",
   },
@@ -1440,7 +1868,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   balanceText: {
-    fontSize: 26,
+    fontSize: 16,
     lineHeight: 32,
   },
   amountInputWrap: {
@@ -1455,7 +1883,7 @@ const styles = StyleSheet.create({
   amountInput: {
     flex: 1,
     minHeight: 92,
-    fontSize: 32,
+    fontSize: 20,
     lineHeight: 38,
   },
   quickAmountRow: {
@@ -1478,7 +1906,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   centerTitle: {
-    fontSize: 20,
+    fontSize: 16,
     lineHeight: 25,
   },
   categoryGrid: {
@@ -1510,11 +1938,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   confirmTitle: {
-    fontSize: 22,
+    fontSize: 16,
     lineHeight: 28,
   },
   confirmAmount: {
-    fontSize: 30,
+    fontSize: 16,
     lineHeight: 36,
   },
   confirmMeta: {
@@ -1535,8 +1963,102 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 24,
     borderWidth: 1.5,
-    fontSize: 30,
+    fontSize: 16,
     lineHeight: 36,
+  },
+
+  methodList: {
+    gap: 12,
+  },
+  methodCard: {
+    minHeight: 104,
+    borderRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  methodIconWrap: {
+    width: 54,
+    height: 54,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  methodCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  methodTitle: {
+    fontSize: 16,
+    lineHeight: 23,
+  },
+
+  fundHeroCard: {
+    minHeight: 88,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+  },
+  bankTransferDetailsCard: {
+    borderWidth: 1,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 6,
+  },
+  bankTransferTitle: {
+    fontSize: 16,
+    lineHeight: 23,
+    marginBottom: 2,
+  },
+
+  successIconWrap: {
+    width: 132,
+    height: 132,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  successGlow: {
+    position: "absolute",
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "rgba(87,242,200,0.14)",
+  },
+  successIconInner: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#4FC3F7",
+  },
+  successTitle: {
+    fontSize: 16,
+    lineHeight: 32,
+    textAlign: "center",
+  },
+  successMessage: {
+    textAlign: "center",
+    maxWidth: 320,
+  },
+  referenceCard: {
+    minHeight: 92,
+    minWidth: 250,
+    borderRadius: 22,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    gap: 6,
+    marginTop: 10,
+  },
+  referenceText: {
+    textAlign: "center",
   },
 
   primaryFooterButton: {
@@ -1547,33 +2069,77 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryFooterText: {
-    fontSize: 18,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 24,
+    fontWeight: "600",
+    textAlign: "center",
   },
 
-  targetCard: {
-    minHeight: 84,
-    borderRadius: 22,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    overflow: "hidden",
-  },
-  targetGlow: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.12,
-  },
-  targetIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 18,
+  secondaryFooter: {
+    marginTop: 10,
     alignItems: "center",
     justifyContent: "center",
   },
-  targetCopy: {
-    flex: 1,
-    gap: 2,
+
+  secondaryFooterText: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+  },
+
+  sectionSpacing: {
+    marginTop: 20,
+  },
+
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  emptyStateText: {
+    fontSize: 13,
+    lineHeight: 22,
+    textAlign: "center",
+  },
+
+  emptyStateSubText: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+    marginTop: 6,
+  },
+
+  iconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  shadowSoft: {
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 });

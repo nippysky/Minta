@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.minta"
+      "bundleIdentifier": "com.anonymous.minta",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "MiNTA uses your photo library so you can choose a profile picture.",
+        "NSCameraUsageDescription": "MiNTA uses your camera so you can take a profile picture."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,8 +24,6 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
       ],
@@ -52,6 +54,13 @@
         "expo-local-authentication",
         {
           "faceIDPermission": "Allow Minta to use Face ID for secure biometric sign in."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MiNTA uses your photo library so you can choose a profile picture.",
+          "cameraPermission": "MiNTA uses your camera so you can take a profile picture."
         }
       ]
     ],

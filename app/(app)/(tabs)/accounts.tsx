@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppScreen from "@/src/components/ui/AppScreen";
 import AppText from "@/src/components/ui/AppText";
 import AccountPickerSheet from "@/src/features/accounts/components/AccountPickerSheet";
+import LinkNewAccountSheet from "@/src/features/accounts/components/LinkNewAccountSheet";
 import { MOCK_LINKED_ACCOUNTS } from "@/src/features/accounts/mock";
 import type { LinkedAccount } from "@/src/features/accounts/types";
 import { getNetWorth, maskMoney } from "@/src/features/accounts/utils";
@@ -34,6 +35,12 @@ type TransferPayload = {
   amount: number;
   fee: number;
   category: string;
+};
+
+type LinkedAccountDraft = {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
 };
 
 function FadeInUp({
@@ -77,18 +84,53 @@ function FadeInUp({
   );
 }
 
+function buildLinkedBankAccount(
+  payload: LinkedAccountDraft,
+  accent: string
+): LinkedAccount {
+  return {
+    id: `linked-${payload.bankName.toLowerCase().replace(/\s+/g, "-")}-${payload.accountNumber}`,
+    kind: "bank",
+    bankName: payload.bankName,
+    accountType: "Savings",
+    accountNumber: payload.accountNumber,
+    balance: 0,
+    accent,
+    icon: "business-outline",
+    logoColor: "#FFFFFF",
+  } as LinkedAccount;
+}
+
+function accentForBank(bankName: string) {
+  const map: Record<string, string> = {
+    GTBank: "rgba(245,158,11,0.12)",
+    UBA: "rgba(239,68,68,0.12)",
+    "Access Bank": "rgba(34,197,94,0.12)",
+    "Zenith Bank": "rgba(220,38,38,0.12)",
+    "First Bank": "rgba(245,158,11,0.12)",
+    OPay: "rgba(34,197,94,0.12)",
+    Kuda: "rgba(168,85,247,0.12)",
+    MoniePoint: "rgba(37,99,235,0.12)",
+    PalmPay: "rgba(250,204,21,0.12)",
+  };
+
+  return map[bankName] ?? "rgba(87,242,200,0.10)";
+}
+
 export default function AccountsScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
 
-  const [accounts] = useState<LinkedAccount[]>(MOCK_LINKED_ACCOUNTS);
+  const [accounts, setAccounts] =
+    useState<LinkedAccount[]>(MOCK_LINKED_ACCOUNTS);
   const [balancesVisible, setBalancesVisible] = useState(true);
   const [netWorthExpanded, setNetWorthExpanded] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerMode, setPickerMode] = useState<PickerMode>("transfer");
   const [pickerSourceAccount, setPickerSourceAccount] =
     useState<LinkedAccount | null>(null);
+  const [linkSheetVisible, setLinkSheetVisible] = useState(false);
 
   const chevron = useRef(new Animated.Value(0)).current;
 
@@ -158,6 +200,39 @@ export default function AccountsScreen() {
       type: "success",
       title: "Transfer queued",
       message: `₦${payload.amount.toLocaleString("en-NG")} from ${payload.source.bankName} to ${destinationLabel}.`,
+    });
+  };
+
+  const handleLinkAccountComplete = (payload: LinkedAccountDraft) => {
+    const exists = accounts.some(
+      (item) =>
+        item.kind === "bank" &&
+        item.bankName === payload.bankName &&
+        item.accountNumber === payload.accountNumber
+    );
+
+    if (!exists) {
+      const nextAccount = buildLinkedBankAccount(
+        payload,
+        accentForBank(payload.bankName)
+      );
+
+      setAccounts((prev) => {
+        const walletEntry = prev.find((item) => item.kind === "wallet") ?? null;
+        const bankEntries = prev.filter((item) => item.kind === "bank");
+
+        if (!walletEntry) {
+          return [nextAccount, ...bankEntries];
+        }
+
+        return [walletEntry, nextAccount, ...bankEntries];
+      });
+    }
+
+    showToast({
+      type: "success",
+      title: "Account linked",
+      message: `${payload.bankName} • ${payload.accountNumber} has been added.`,
     });
   };
 
@@ -617,13 +692,7 @@ export default function AccountsScreen() {
 
         <FadeInUp delay={380}>
           <Pressable
-            onPress={() =>
-              showToast({
-                type: "success",
-                title: "Link account",
-                message: "Continue using the existing account linking flow.",
-              })
-            }
+            onPress={() => setLinkSheetVisible(true)}
             style={[styles.linkBtn, { backgroundColor: theme.colors.tint }]}
           >
             <Ionicons name="add" size={20} color={theme.colors.primaryText} />
@@ -654,6 +723,12 @@ export default function AccountsScreen() {
         sourceAccount={pickerMode === "transfer" ? pickerSourceAccount : null}
         onSelectAccount={handlePickerSelect}
         onTransferComplete={handleTransferComplete}
+      />
+
+      <LinkNewAccountSheet
+        visible={linkSheetVisible}
+        onClose={() => setLinkSheetVisible(false)}
+        onComplete={handleLinkAccountComplete}
       />
     </AppScreen>
   );
@@ -853,7 +928,7 @@ const styles = StyleSheet.create({
   bankTop: {
     flexDirection: "row",
     alignItems: "flex-start",
-    justifyContent: "space-between",
+    justifyContent : "space-between",
     gap: 10,
   },
   bankIdentity: {
